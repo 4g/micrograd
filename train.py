@@ -1,14 +1,15 @@
-from micrograd_python import MLP, Neuron, Value
+from micrograd_python import MLP
 from sklearn.datasets import make_moons
 import numpy as np
 
-def plot_moons(X, y, w=40, h=40):
+def plot_moons(X, y):
+    w = 20
     np.set_printoptions(linewidth=100000, threshold=100000)
-    image = np.ones((w, h), dtype=np.uint8)*8
+    image = np.ones((w, w), dtype=np.uint8)*8
 
     for x, y_ in zip(X, y):
-        xi = x[0] * 10 + 20 - 1
-        yi = x[1] * 10 + 20 - 1
+        xi = x[0] * w/4 + w/2 - 1
+        yi = x[1] * w/4 + w/2 - 1
         image[int(xi), int(yi)] = y_
 
     image = str(image)
@@ -17,7 +18,6 @@ def plot_moons(X, y, w=40, h=40):
     image = image.replace("1", ".")
     print(image, end='\r')
 
-
     LINE_UP = '\033[1A'
     LINE_CLEAR = '\x1b[2K'
 
@@ -25,9 +25,6 @@ def plot_moons(X, y, w=40, h=40):
         print(LINE_UP, end=LINE_CLEAR)
 
 X, Y = make_moons(n_samples=300)
-# plot_moons(X, y)
-
-
 Y = Y * 2 - 1
 
 mlp = MLP(indim=2, outdim=1, hidden_dim=16, n_hidden_layers=1, activation=True)
@@ -56,6 +53,4 @@ for epoch in range(100):
     for param in mlp.params():
         param.grad = 0.0
 
-    # print(total_loss, loss, reg_loss)
-    # print(sum(correct)/len(correct))
     plot_moons(X, correct)

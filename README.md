@@ -4,4 +4,4 @@ Reimplemtation of Karpathy's micrograd in
 3. Triton
 
 This was done as an exercise to learn torch/triton and quantization. 
-All three implementations support 8bit layers and compute.   
+All three implementations support 8bit layers and compute.
