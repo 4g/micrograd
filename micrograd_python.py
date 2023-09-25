@@ -93,6 +93,7 @@ class Value:
         self.grad = 1.0
         topo = []
         visited = set()
+
         def build_topo(v):
             if v not in visited:
                 visited.add(v)
@@ -103,34 +104,43 @@ class Value:
 
         # go one variable at a time and apply the chain rule to get its gradient
         self.grad = 1
+        # print(topo)
         for v in reversed(topo):
             v._backward()
-
 
     def __repr__(self) -> str:
         return f"Node(id: {self.id}, data:{self.data}, grad:{self.grad}, op:{self._op})"
 
+
 class Neuron:
     ID = 0
+
     def __init__(self, indim, activation=True):
         Neuron.ID += 1
-        self.w = [Value(2 * random.random() - 1) for i in range(indim)]
-        self.b = Value(0)
+        self.indim = indim
+        self.w = [Value(random.uniform(-1,1), _op='w') for i in range(indim)]
+        self.b = Value(0, _op='b')
         self.id = Neuron.ID
         self.activation = activation
 
     def __call__(self, x):
-        value = sum(_x*_w for _x,_w in zip(x, self.w)) + self.b
+        value = sum(_x*_w for _x, _w in zip(x, self.w)) + self.b
         if self.activation:
             value = value.relu()
         
         return value
 
     def __repr__(self):
-        return f"Neuron:{self.id},W:{self.w}, B:{self.b}"
+        return f"Neu:{self.id},IN:{self.indim},act={self.activation}"
+
+    def params(self):
+        for param in self.w + [self.b]:
+            yield param
+
 
 class Layer:
     ID = 0
+
     def __init__(self, indim, outdim, activation=True):
         Layer.ID += 1
         self.indim = indim
@@ -146,15 +156,21 @@ class Layer:
     def __repr__(self):
         return f"Layer:{self.id},IN:{self.indim}, OUT:{self.outdim}, activation={self.activation}"
 
-    
+    def params(self):
+        for neuron in self.neurons:
+            for param in neuron.params():
+                yield param
+
+
 class MLP:
     ID = 0
+
     def __init__(self, indim, hidden_dim, n_hidden_layers, outdim, activation):
         MLP.ID += 1
         self.layers = []
         self.layers += [Layer(indim=indim, outdim=hidden_dim, activation=activation)]
         self.layers += [Layer(indim=hidden_dim, outdim=hidden_dim, activation=activation) for i in range(n_hidden_layers)]
-        self.layers += [Layer(indim=hidden_dim, outdim=outdim, activation=activation)]
+        self.layers += [Layer(indim=hidden_dim, outdim=outdim, activation=False)]
         self.id = MLP.ID
     
     def __call__(self, x):
@@ -162,6 +178,11 @@ class MLP:
             x = layer(x)
         
         return x
+
+    def params(self):
+        for layer in self.layers:
+            for param in layer.params():
+                yield param
 
     def __repr__(self):
         return "\n".join([str(l) for l in self.layers])
