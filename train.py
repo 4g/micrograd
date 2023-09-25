@@ -53,4 +53,4 @@ for epoch in range(100):
     for param in mlp.params():
         param.grad = 0.0
 
-    plot_moons(X, correct)
+    # plot_moons(X, correct)
