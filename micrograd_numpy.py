@@ -6,18 +6,19 @@ class Tensor:
                 value=None,
                 _op=None,
                 _children=(),
-                requires_grad=True):
+                requires_grad=True,
+                name=None):
         
         Tensor.ID += 1
         self.id = Tensor.ID
+        self.name = name if name else f"NODE_{self.ID}"
         
         self.data = np.asarray(value, dtype=np.float32)
         self.shape = self.data.shape
         self.requires_grad = requires_grad
 
         self.grad = None
-        if self.requires_grad:
-            self.grad = np.zeros(self.shape, dtype=np.float32)
+        self.grad = np.zeros(self.shape, dtype=np.float32)
         
         self._op = _op
         self._children = _children
@@ -29,11 +30,12 @@ class Tensor:
 
 
         def _backward_flat():
+            # print(out.grad, self.grad, other.grad, np.sum(out.grad, axis=0, keepdims=False))
             if self.requires_grad:
                 self.grad += out.grad
             
             if other.requires_grad:
-                flatgrad = np.sum(out.grad.data, axis=0, keepdims=False)
+                flatgrad = np.sum(out.grad, axis=0, keepdims=False)
                 other.grad += flatgrad
 
         def _backward():
@@ -151,26 +153,26 @@ class Tensor:
         # go one variable at a time and apply the chain rule to get its gradient
         for v in reversed(topo):
             if v.requires_grad:
-                # print(v)
                 v._backward()
-
+            
     def __repr__(self) -> str:
-        return f"** Node(id: {self.id},op:{self._op}, requires_grad:{self.requires_grad}, \n\
-data{self.data.shape}:{self.data},\n\
-grad{self.grad.shape}:{self.grad})\n**"
+        return f"TENSOR_{self.name}(id: {self.id},op:{self._op}, requires_grad:{self.requires_grad},data{self.data.shape}:{self.data.tolist()},grad{self.grad.shape}:{self.grad.tolist()})"
 
 
 class Layer:
     ID = 0
 
-    def __init__(self, indim, outdim, activation=True):
+    def __init__(self, indim, outdim, activation=True, name=None):
         Layer.ID += 1
+
+        self.id = Layer.ID
+        self.name = name if name else f"LAYER_{Layer.ID}"
         self.indim = indim
         self.outdim = outdim
         self.activation = activation
-        self.weights = Tensor(value=np.random.random(size=(indim, outdim)))
-        self.biases = Tensor(value=np.zeros(shape=(outdim, ), dtype=np.float32))
-        self.id = Layer.ID
+        self.weights = Tensor(value=np.random.uniform(low=-1, high=1, size=(indim, outdim)), name=f"{self.name}_w")
+        self.biases = Tensor(value=np.zeros(shape=(outdim, ), dtype=np.float32), name=f"{self.name}_b")
+        
 
     def __call__(self, x):
         out = self.weights.__rmatmul__(x) + self.biases
@@ -180,7 +182,7 @@ class Layer:
         return out
     
     def __repr__(self):
-        return f"Layer:{self.id},IN:{self.indim}, OUT:{self.outdim}, activation={self.activation}"
+        return f"Layer_{self.name},IN:{self.indim}, OUT:{self.outdim}, activation={self.activation}"
 
     def params(self):
         for tensor in [self.weights, self.biases]:
@@ -193,14 +195,22 @@ class MLP:
     def __init__(self, indim, hidden_dim, n_hidden_layers, outdim, activation):
         MLP.ID += 1
         self.layers = []
-        self.layers += [Layer(indim=indim, outdim=hidden_dim, activation=activation)]
-        self.layers += [Layer(indim=hidden_dim, outdim=hidden_dim, activation=activation) for i in range(n_hidden_layers)]
-        self.layers += [Layer(indim=hidden_dim, outdim=outdim, activation=False)]
+        self.layers += [Layer(indim=indim, outdim=hidden_dim, activation=activation, name="INPUT")]
+        self.layers += [Layer(indim=hidden_dim, outdim=hidden_dim, activation=activation, name=f"HIDDEN_{i}") for i in range(n_hidden_layers)]
+        self.layers += [Layer(indim=hidden_dim, outdim=outdim, activation=False, name="OUTPUT")]
         self.id = MLP.ID
     
     def __call__(self, x):
         for layer in self.layers:
+            # print('........................')
+            # print("Name=",layer.name)
+            # print("Param=")
+            # for param in layer.params():
+            #     print(param)
+            # print("X=\n", x)
             x = layer(x)
+            # print("Y=\n", x)
+            
         return x
 
     def params(self):
@@ -212,13 +222,9 @@ class MLP:
         return "\n".join([str(l) for l in self.layers])
 
 
-# x = np.random.random((3, 2))
-# y = np.random.random((2, 4))
-# # y = Tensor(value=y)
-# # y @ x
-# t1 = MLP(indim=2, outdim=1, hidden_dim=16, n_hidden_layers=2, activation=True)
-# y = t1(x)
-
-# # print(y)
-
-# y.backward()
+# x = Tensor(value=[1.0])
+# y = np.asarray([22.0])
+# print(x, y)
+# z = x * y
+# print(z)
+# print(z.relu())

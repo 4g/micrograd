@@ -40,9 +40,10 @@ for epoch in range(100):
         # print("==",ypred, y, loss)
 
     loss = sum(losses) * (1. / len(losses))
-    alpha = 1e-4
-    reg_loss = alpha * sum((p * p for p in mlp.params()))
-    total_loss = loss + reg_loss
+    # alpha = 1e-4
+    # reg_loss = alpha * sum((p * p for p in mlp.params()))
+    # total_loss = loss + reg_loss
+    total_loss = loss
 
     total_loss.backward()
 
@@ -53,4 +54,5 @@ for epoch in range(100):
     for param in mlp.params():
         param.grad = 0.0
 
-    # plot_moons(X, correct)
+    print(f"epoch:{epoch}, accuracy:{sum(correct)/len(correct)}")
+    plot_moons(X, correct)
