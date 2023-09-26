@@ -30,7 +30,6 @@ class Tensor:
 
 
         def _backward_flat():
-            # print(out.grad, self.grad, other.grad, np.sum(out.grad, axis=0, keepdims=False))
             if self.requires_grad:
                 self.grad += out.grad
             
@@ -60,7 +59,6 @@ class Tensor:
         out = Tensor(value=self.data * other.data, _op='*', _children=[self, other])
 
         def _backward():
-            # print(self.data, other.data, out.data)
             if self.requires_grad:
                 self.grad += other.data * out.grad
             
@@ -202,14 +200,7 @@ class MLP:
     
     def __call__(self, x):
         for layer in self.layers:
-            # print('........................')
-            # print("Name=",layer.name)
-            # print("Param=")
-            # for param in layer.params():
-            #     print(param)
-            # print("X=\n", x)
             x = layer(x)
-            # print("Y=\n", x)
             
         return x
 
@@ -220,11 +211,3 @@ class MLP:
 
     def __repr__(self):
         return "\n".join([str(l) for l in self.layers])
-
-
-# x = Tensor(value=[1.0])
-# y = np.asarray([22.0])
-# print(x, y)
-# z = x * y
-# print(z)
-# print(z.relu())
