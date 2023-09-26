@@ -27,6 +27,15 @@ class Tensor:
         other = other if isinstance(other, Tensor) else Tensor(value=other, _children=(), _op='', requires_grad=False)
         out = Tensor(value=self.data + other.data, _op='+', _children=[self, other])
 
+
+        def _backward_flat():
+            if self.requires_grad:
+                self.grad += out.grad
+            
+            if other.requires_grad:
+                flatgrad = np.sum(out.grad.data, axis=0, keepdims=False)
+                other.grad += flatgrad
+
         def _backward():
             if self.requires_grad:
                 self.grad += out.grad
@@ -34,7 +43,11 @@ class Tensor:
             if other.requires_grad:
                 other.grad += out.grad
 
-        out._backward = _backward
+        if other.data.shape == self.data.shape:
+            out._backward = _backward
+        else:
+            out._backward = _backward_flat
+
         return out
 
     def __sub__(self, other):
@@ -45,6 +58,7 @@ class Tensor:
         out = Tensor(value=self.data * other.data, _op='*', _children=[self, other])
 
         def _backward():
+            # print(self.data, other.data, out.data)
             if self.requires_grad:
                 self.grad += other.data * out.grad
             
@@ -77,7 +91,7 @@ class Tensor:
         return out
 
     def relu(self):
-        out = Tensor(np.maximum(np.zeros(shape=self.data.shape), self.data), _op='relu', _children=(self,))
+        out = Tensor(np.maximum(np.zeros(shape=self.data.shape), self.data), _op='relu', _children=(self,), requires_grad=True)
         def _backward():
             valid_grad = np.where(self.data > 0, 1.0, 0.0)
             self.grad += valid_grad * out.grad
@@ -110,6 +124,17 @@ class Tensor:
     def __rtruediv__(self, other):
         return other * (self ** -1)
 
+    def norm(self):
+        return np.linalg.norm(self.data, ord=2)
+
+    def mean(self):
+        out = Tensor(value=np.mean(self.data, axis=0), _op='mean', _children=(self,), requires_grad=True)
+        def _backward():
+            self.grad += out.grad / np.product(self.data.shape) 
+        
+        out._backward = _backward
+        return out
+
     def backward(self):
         self.grad = np.ones(shape=self.data.shape)
         topo = []
@@ -126,13 +151,13 @@ class Tensor:
         # go one variable at a time and apply the chain rule to get its gradient
         for v in reversed(topo):
             if v.requires_grad:
-                print(v)
+                # print(v)
                 v._backward()
 
     def __repr__(self) -> str:
-        return f"Node(id: {self.id},op:{self._op}, requires_grad:{self.requires_grad}, \n\
+        return f"** Node(id: {self.id},op:{self._op}, requires_grad:{self.requires_grad}, \n\
 data{self.data.shape}:{self.data},\n\
-grad{self.grad.shape}:{self.grad})"
+grad{self.grad.shape}:{self.grad})\n**"
 
 
 class Layer:
@@ -175,10 +200,7 @@ class MLP:
     
     def __call__(self, x):
         for layer in self.layers:
-            print(layer)
-            print(x.shape)
             x = layer(x)
-            print(x.shape)
         return x
 
     def params(self):
@@ -190,13 +212,13 @@ class MLP:
         return "\n".join([str(l) for l in self.layers])
 
 
-x = np.random.random((3, 2))
-y = np.random.random((2, 4))
-# y = Tensor(value=y)
-# y @ x
-t1 = MLP(indim=2, outdim=1, hidden_dim=2, n_hidden_layers=1, activation=True)
-y = t1(x)
+# x = np.random.random((3, 2))
+# y = np.random.random((2, 4))
+# # y = Tensor(value=y)
+# # y @ x
+# t1 = MLP(indim=2, outdim=1, hidden_dim=16, n_hidden_layers=2, activation=True)
+# y = t1(x)
 
-# print(y)
+# # print(y)
 
-y.backward()
+# y.backward()
