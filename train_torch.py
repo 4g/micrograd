@@ -1,4 +1,4 @@
-from micrograd_numpy import MLP
+from micrograd_torch import MLP, Tensor
 from sklearn.datasets import make_moons
 import numpy as np
 from utils import plot_moons
@@ -21,14 +21,9 @@ for epoch in range(1):
         x = X[idx*batch_size:(idx+1)*batch_size]
         y = Y[idx*batch_size:(idx+1)*batch_size]
         ypred = mlp(x)
-        loss = (-ypred*y + 1).relu()
+        loss = (-ypred*Tensor(y) + 1).relu()
         
         loss = loss.mean()
-        loss.name = "LOSS"
-        # alpha = 1e-4
-        # reg_loss = alpha * sum((p.norm() for p in mlp.params()))
-        # total_loss = loss + reg_loss
-
         loss.backward()
         
         learning_rate = 1.0 - 0.9 * epoch / 100
@@ -39,8 +34,9 @@ for epoch in range(1):
             param.grad *= 0.0
         
         preds = mlp(X)
-        correct = np.sign(Y) == np.sign(preds.data)
-    
+        preds = preds.detach().numpy()
+        correct = np.sign(Y) == np.sign(preds)
+        # print(correct)
         plot_moons(X, correct[:, 0])
     
     print(f"Epoch:{epoch}, accuracy:{np.mean(correct)}")
