@@ -28,7 +28,6 @@ class Tensor:
         other = other if isinstance(other, Tensor) else Tensor(value=other, _children=(), _op='', requires_grad=False)
         out = Tensor(value=self.data + other.data, _op='+', _children=[self, other])
 
-
         def _backward_flat():
             if self.requires_grad:
                 self.grad += out.grad
@@ -68,7 +67,6 @@ class Tensor:
         out._backward = _backward
         return out
 
-
     def __neg__(self):
         return self * -1
     
@@ -84,6 +82,7 @@ class Tensor:
     def __pow__(self, other):
         assert isinstance(other, int)
         out = Tensor(self.data ** other, _op='pow', _children=(self, ))
+
         def _backward():
             self.grad += other * (self.data ** (other-1)) * out.grad
         
@@ -92,13 +91,13 @@ class Tensor:
 
     def relu(self):
         out = Tensor(np.maximum(np.zeros(shape=self.data.shape), self.data), _op='relu', _children=(self,), requires_grad=True)
+
         def _backward():
             valid_grad = np.where(self.data > 0, 1.0, 0.0)
             self.grad += valid_grad * out.grad
         
         out._backward = _backward
         return out
-
 
     def __matmul__(self, other):
         other = other if isinstance(other, Tensor) else Tensor(value=other, _children=(), _op='', requires_grad=False)
@@ -129,6 +128,7 @@ class Tensor:
 
     def mean(self):
         out = Tensor(value=np.mean(self.data, axis=0), _op='mean', _children=(self,), requires_grad=True)
+
         def _backward():
             self.grad += out.grad / np.product(self.data.shape) 
         
@@ -170,7 +170,6 @@ class Layer:
         self.activation = activation
         self.weights = Tensor(value=np.random.uniform(low=-1, high=1, size=(indim, outdim)), name=f"{self.name}_w")
         self.biases = Tensor(value=np.zeros(shape=(outdim, ), dtype=np.float32), name=f"{self.name}_b")
-        
 
     def __call__(self, x):
         out = self.weights.__rmatmul__(x) + self.biases
@@ -189,7 +188,7 @@ class Layer:
 
 class MLP:
     ID = 0
-
+    
     def __init__(self, indim, hidden_dim, n_hidden_layers, outdim, activation):
         MLP.ID += 1
         self.layers = []

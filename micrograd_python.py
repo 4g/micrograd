@@ -51,7 +51,6 @@ class Value:
         out._backward = _backward
         return out
 
-
     def __neg__(self):
         return self * -1
     
@@ -63,11 +62,11 @@ class Value:
     
     def __rsub__(self, other):
         return self - other
-    
 
     def __pow__(self, other):
         assert isinstance(other, int)
         out = Value(self.data ** other, _op='pow', _children=(self, ))
+
         def _backward():
             self.grad += other * (self.data ** (other-1)) * out.grad
         
@@ -76,6 +75,7 @@ class Value:
 
     def relu(self):
         out = Value(max(self.data, 0), _op='relu', _children=(self,))
+
         def _backward():
             self.grad += 0 if self.data < 0 else out.grad
         
@@ -87,7 +87,6 @@ class Value:
 
     def __rtruediv__(self, other):
         return other * (self ** -1)
-
 
     def backward(self):
         self.grad = 1.0

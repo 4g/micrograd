@@ -1,5 +1,5 @@
 from micrograd_python import Value
-from micrograd_python import Layer, Module
+from micrograd_python import Layer
 
 # make dataset with known results
 
